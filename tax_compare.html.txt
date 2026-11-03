@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>年度別・2パターン税金＆手取り比較シミュレーター</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --subtext: #64748b;
+    --border: #e2e8f0;
+    --accent-a: #2563eb;
+    --accent-a-light: #eff6ff;
+    --accent-b: #059669;
+    --accent-b-light: #ecfdf5;
+    --danger: #dc2626;
+  }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif; }
+  body { margin: 0; padding: 0 0 110px 0; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  
+  /* ヘッダー・共通設定エリア */
+  header { background: #0f172a; color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .header-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+  h1 { margin: 0; font-size: 16px; font-weight: 700; }
+  .controls-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  select.year-select { padding: 6px 10px; border-radius: 6px; border: 1px solid #475569; background: #1e293b; color: #fff; font-weight: 600; font-size: 13px; }
+  .btn-util { padding: 6px 10px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: #fff; font-size: 12px; cursor: pointer; }
+  .btn-util:active { transform: translateY(1px); }
+
+  .container { max-width: 1100px; margin: 16px auto; padding: 0 12px; }
+
+  /* スマホ用タブ切り替え（PCでは非表示） */
+  .mobile-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid var(--border); background: var(--card-bg); font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
+  .tab-btn.active-a { border-color: var(--accent-a); background: var(--accent-a-light); color: var(--accent-a); }
+  .tab-btn.active-b { border-color: var(--accent-b); background: var(--accent-b-light); color: var(--accent-b); }
+
+  /* 2カラムグリッド */
+  .grid-2col { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  @media (min-width: 768px) {
+    .mobile-tabs { display: none; }
+    .grid-2col { grid-template-columns: 1fr 1fr; }
+    .panel { display: block !important; }
+  }
+
+  .panel { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .panel-header { padding: 12px 16px; font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+  .panel-a .panel-header { background: var(--accent-a); color: #fff; }
+  .panel-b .panel-header { background: var(--accent-b); color: #fff; }
+  .panel-body { padding: 14px 16px; }
+
+  /* 入力フォーム */
+  .section-title { font-size: 12px; font-weight: 700; color: var(--subtext); margin: 14px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .section-title:first-child { margin-top: 0; }
+  .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+  .input-label { font-size: 13px; font-weight: 600; flex: 1; }
+  .input-sub { font-size: 11px; color: var(--subtext); display: block; font-weight: normal; }
+  .input-ctrl { display: flex; align-items: center; gap: 4px; }
+  input[type="number"] { width: 95px; padding: 7px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-weight: 600; text-align: right; }
+  .unit { font-size: 12px; color: var(--subtext); margin-left: 2px; }
+  .step-btn { width: 28px; height: 32px; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; color: #334155; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .step-btn:active { background: #e2e8f0; }
+
+  .radio-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .radio-label { flex: 1; min-width: 80px; text-align: center; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #f8fafc; }
+  input[type="radio"] { display: none; }
+  input[type="radio"]:checked + .radio-label { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+  /* 計算結果テーブル */
+  .result-box { margin-top: 16px; background: #f8fafc; border-radius: 8px; padding: 12px; border: 1px solid var(--border); }
+  .res-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px dashed #e2e8f0; }
+  .res-row:last-child { border-bottom: none; }
+  .res-row.highlight { font-weight: 700; font-size: 14px; color: #0f172a; background: #fef9c3; margin: 4px -8px; padding: 6px 8px; border-radius: 6px; border-bottom: none; }
+  .res-row.tax-total { font-weight: 700; color: var(--danger); }
+  .badge { display: inline-block; padding: 2px 6px; font-size: 11px; border-radius: 4px; background: #e2e8f0; color: #334155; font-weight: 600; }
+
+  /* 下部固定・常時比較バー */
+  .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; background: #0f172a; color: #fff; padding: 10px 16px; z-index: 30; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .footer-metrics { display: flex; gap: 16px; align-items: center; flex: 1; justify-content: space-around; }
+  .f-item { text-align: center; }
+  .f-label { font-size: 11px; color: #94a3b8; display: block; }
+  .f-val { font-size: 15px; font-weight: 700; }
+  .f-val.a-col { color: #60a5fa; }
+  .f-val.b-col { color: #34d399; }
+  .f-diff { background: #1e293b; padding: 6px 12px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>税金＆手取り 2パターン比較</h1>
+    <div class="controls-bar">
+      <select id="taxYear" class="year-select" onchange="calculateAll()">
+        <option value="R8" selected>令和8年分 (給与控除74万/青色65万)</option>
+        <option value="R9">令和9年分 (給与控除74万/青色75万)</option>
+        <option value="R7">令和7年分 (給与控除65万/青色65万)</option>
+      </select>
+      <button class="btn-util" onclick="copyAtoB()">AをBにコピー</button>
+      <button class="btn-util" onclick="resetPreset()">初期値に戻す</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- スマホ用タブ -->
+  <div class="mobile-tabs">
+    <button id="tabA" class="tab-btn active-a" onclick="switchTab('A')">パターンA</button>
+    <button id="tabB" class="tab-btn" onclick="switchTab('B')">パターンB</button>
+  </div>
+
+  <div class="grid-2col">
+    <!-- パターンA -->
+    <div id="panelA" class="panel panel-a">
+      <div class="panel-header">
+        <span>パターンA</span>
+        <span id="badgeA" class="badge"></span>
+      </div>
+      <div class="panel-body" id="formA"></div>
+    </div>
+
+    <!-- パターンB -->
+    <div id="panelB" class="panel panel-b" style="display:none;">
+      <div class="panel-header">
+        <span>パターンB</span>
+        <span id="badgeB" class="badge"></span>
+      </div>
+      <div class="panel-body" id="formB"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 下部常時比較バー -->
+<div class="sticky-footer">
+  <div class="footer-inner">
+    <div class="footer-metrics">
+      <div class="f-item">
+        <span class="f-label">A 税額 / キャッシュ手取り</span>
+        <span class="f-val a-col" id="footA">-</span>
+      </div>
+      <div class="f-item">
+        <span class="f-label">B 税額 / キャッシュ手取り</span>
+        <span class="f-val b-col" id="footB">-</span>
+      </div>
+      <div class="f-diff">
+        <span class="f-label">手取り差額 (A − B)</span>
+        <span class="f-val" id="footDiff">-</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * ==========================================
+ * 第1層：年度別マスターデータ（税制改正時はここに追加・修正）
+ * 単位はすべて「円」または「比率」
+ * ==========================================
+ */
+const TAX_MASTER = {
+  R7: {
+    name: "令和7年分 (2025)",
+    salaryMinDeduction: 650000,
+    blueMaxDefault: 650000,
+    residentBasicDeduction: 430000,
+    residentPerCapita: 5000,
+    surtaxRate: 0.021,
+    // 合計所得金額に応じた所得税の基礎控除テーブル
+    basicDeductionTable: [
+      { maxIncome: 1320000, amount: 950000 },
+      { maxIncome: 3360000, amount: 880000 },
+      { maxIncome: 4890000, amount: 680000 },
+      { maxIncome: 6550000, amount: 630000 },
+      { maxIncome: 23500000, amount: 580000 },
+      { maxIncome: Infinity, amount: 0 }
+    ]
+  },
+  R8: {
+    name: "令和8年分 (2026)",
+    salaryMinDeduction: 740000, // 本則69万＋特例5万
+    blueMaxDefault: 650000,
+    residentBasicDeduction: 430000,
+    residentPerCapita: 5000,
+    surtaxRate: 0.021,
+    basicDeductionTable: [
+      { maxIncome: 4890000, amount: 1040000 }, // 本則62万＋特例42万
+      { maxIncome: 6550000, amount: 670000 },  // 本則62万＋特例5万
+      { maxIncome: 23500000, amount: 620000 },
+      { maxIncome: Infinity, amount: 0 }
+    ]
+  },
+  R9: {
+    name: "令和9年分 (2027)",
+    salaryMinDeduction: 740000, // 本則69万＋特例5万
+    blueMaxDefault: 750000,     // 75万円控除適用開始
+    residentBasicDeduction: 430000,
+    residentPerCapita: 5000,
+    surtaxRate: 0.021,
+    basicDeductionTable: [
+      { maxIncome: 4890000, amount: 1040000 },
+      { maxIncome: 6550000, amount: 670000 },
+      { maxIncome: 23500000, amount: 620000 },
+      { maxIncome: Infinity, amount: 0 }
+    ]
+  }
+};
+
+// 初期プリセット（先ほどのパターンA・B）
+const DEFAULT_STATE = {
+  A: {
+    salaryRev: 74,
+    bizIncomeBeforeBlue: 65,
+    blueDeduction: 65,
+    stockRev: 600,
+    stockCost: 300,
+    stockMethod: "separate", // "no_declare" | "separate"
+    divIncome: 0,
+    divMethod: "comprehensive", // "no_declare" | "separate" | "comprehensive"
+    socialIns: 18,
+    otherDeduction: 0
+  },
+  B: {
+    salaryRev: 74,
+    bizIncomeBeforeBlue: 65,
+    blueDeduction: 65,
+    stockRev: 0,
+    stockCost: 0,
+    stockMethod: "separate",
+    divIncome: 600,
+    divMethod: "comprehensive",
+    socialIns: 18,
+    otherDeduction: 0
+  }
+};
+
+let appState = JSON.parse(localStorage.getItem("taxSimState_v1")) || JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+/**
+ * ==========================================
+ * 第2層：計算エンジン
+ * ==========================================
+ */
+function calcSalaryDeduction(revYen, minDed) {
+  if (revYen <= 0) return 0;
+  let std = 0;
+  if (revYen <= 1625000) std = 550000;
+  else if (revYen <= 1800000) std = revYen * 0.4 - 100000;
+  else if (revYen <= 3600000) std = revYen * 0.3 + 80000;
+  else if (revYen <= 6600000) std = revYen * 0.2 + 440000;
+  else if (revYen <= 8500000) std = revYen * 0.1 + 1100000;
+  else std = 1950000;
+  return Math.max(std, minDed);
+}
+
+function calcProgressiveIncomeTax(taxableYen) {
+  if (taxableYen <= 0) return 0;
+  const brackets = [
+    { limit: 1950000, rate: 0.05, ded: 0 },
+    { limit: 3300000, rate: 0.10, ded: 97500 },
+    { limit: 6950000, rate: 0.20, ded: 427500 },
+    { limit: 9000000, rate: 0.23, ded: 636000 },
+    { limit: 18000000, rate: 0.33, ded: 1536000 },
+    { limit: 40000000, rate: 0.40, ded: 2796000 },
+    { limit: Infinity, rate: 0.45, ded: 4796000 }
+  ];
+  for (const b of brackets) {
+    if (taxableYen <= b.limit) return Math.floor(taxableYen * b.rate - b.ded);
+  }
+  return 0;
+}
+
+function evaluatePattern(p, yearKey) {
+  const master = TAX_MASTER[yearKey];
+  const sRev = p.salaryRev * 10000;
+  const bBefore = p.bizIncomeBeforeBlue * 10000;
+  const bDed = p.blueDeduction * 10000;
+  const stRev = p.stockRev * 10000;
+  const stCost = p.stockCost * 10000;
+  const divInc = p.divIncome * 10000;
+  const socIns = p.socialIns * 10000;
+  const othDed = p.otherDeduction * 10000;
+
+  // 1. 各種所得の計算
+  const salaryDed = calcSalaryDeduction(sRev, master.salaryMinDeduction);
+  const salaryIncome = Math.max(0, sRev - salaryDed);
+  const bizIncome = Math.max(0, bBefore - bDed);
+  const stockGain = Math.max(0, stRev - stCost);
+
+  // 申告する所得の振り分け
+  const declaredStock = (p.stockMethod === "separate") ? stockGain : 0;
+  const declaredDivComp = (p.divMethod === "comprehensive") ? divInc : 0;
+  const declaredDivSep = (p.divMethod === "separate") ? divInc : 0;
+
+  // 合計所得金額（基礎控除の判定用）
+  const totalDeclaredIncome = salaryIncome + bizIncome + declaredStock + declaredDivComp + declaredDivSep;
+
+  // 2. 基礎控除の判定
+  let itBasicDed = 0;
+  for (const row of master.basicDeductionTable) {
+    if (totalDeclaredIncome <= row.maxIncome) {
+      itBasicDed = row.amount;
+      break;
+    }
+  }
+  const resBasicDed = (totalDeclaredIncome <= 24000000) ? master.residentBasicDeduction : 0;
+
+  const totalItDed = itBasicDed + socIns + othDed;
+  const totalResDed = resBasicDed + socIns + othDed;
+
+  // 3. 課税所得の算出（総合課税から先に引き、余りを分離課税から引く）
+  const compIncome = salaryIncome + bizIncome + declaredDivComp;
+  const sepIncome = declaredStock + declaredDivSep;
+
+  // 所得税の課税所得
+  const itTaxableComp = Math.floor(Math.max(0, compIncome - totalItDed) / 1000) * 1000;
+  const itUnusedDed = Math.max(0, totalItDed - compIncome);
+  const itTaxableSep = Math.floor(Math.max(0, sepIncome - itUnusedDed) / 1000) * 1000;
+
+  // 住民税の課税所得
+  const resTaxableComp = Math.floor(Math.max(0, compIncome - totalResDed) / 1000) * 1000;
+  const resUnusedDed = Math.max(0, totalResDed - compIncome);
+  const resTaxableSep = Math.floor(Math.max(0, sepIncome - resUnusedDed) / 1000) * 1000;
+
+  // 4. 所得税の計算（確定申告分）
+  let itBaseComp = calcProgressiveIncomeTax(itTaxableComp);
+  // 配当控除（課税総所得金額1000万円以下部分は10%、超える部分は5%）
+  let itDivCredit = 0;
+  if (declaredDivComp > 0 && itTaxableComp > 0) {
+    const eligibleDiv = Math.min(declaredDivComp, itTaxableComp);
+    const totalTaxable = itTaxableComp + itTaxableSep;
+    if (totalTaxable <= 10000000) {
+      itDivCredit = Math.floor(eligibleDiv * 0.10);
+    } else {
+      const under10M = Math.max(0, 10000000 - (totalTaxable - eligibleDiv));
+      const over10M = eligibleDiv - under10M;
+      itDivCredit = Math.floor(under10M * 0.10 + over10M * 0.05);
+    }
+  }
+  const itCompAfterCredit = Math.max(0, itBaseComp - itDivCredit);
+  const itSepTax = Math.floor(itTaxableSep * 0.15);
+  const itDeclaredTotal = Math.floor((itCompAfterCredit + itSepTax) * (1 + master.surtaxRate));
+
+  // 申告不要を選んだ分の源泉徴収税（所得税15.315%）
+  const withheldItStock = (p.stockMethod === "no_declare") ? Math.floor(stockGain * 0.15315) : 0;
+  const withheldItDiv = (p.divMethod === "no_declare") ? Math.floor(divInc * 0.15315) : 0;
+  const finalIncomeTax = itDeclaredTotal + withheldItStock + withheldItDiv;
+
+  // 5. 住民税の計算
+  let resCompTax = Math.floor(resTaxableComp * 0.10);
+  let resDivCredit = 0;
+  if (declaredDivComp > 0 && resTaxableComp > 0) {
+    const eligibleResDiv = Math.min(declaredDivComp, resTaxableComp);
+    const totalResTaxable = resTaxableComp + resTaxableSep;
+    if (totalResTaxable <= 10000000) {
+      resDivCredit = Math.floor(eligibleResDiv * 0.028);
+    } else {
+      const under10M = Math.max(0, 10000000 - (totalResTaxable - eligibleResDiv));
+      const over10M = eligibleResDiv - under10M;
+      resDivCredit = Math.floor(under10M * 0.028 + over10M * 0.014);
+    }
+  }
+  const resSepTax = Math.floor(resTaxableSep * 0.05);
+  const adjCredit = (resTaxableComp + resTaxableSep > 0) ? 2500 : 0;
+  const resIncomeLevy = Math.floor(Math.max(0, resCompTax - resDivCredit + resSepTax - adjCredit) / 100) * 100;
+  const perCapita = (totalDeclaredIncome > 450000) ? master.residentPerCapita : 0;
+  const withheldResStock = (p.stockMethod === "no_declare") ? Math.floor(stockGain * 0.05) : 0;
+  const withheldResDiv = (p.divMethod === "no_declare") ? Math.floor(divInc * 0.05) : 0;
+  const finalResidentTax = resIncomeLevy + perCapita + withheldResStock + withheldResDiv;
+
+  // 源泉徴収本来の総額（比較用）
+  const originalWithheld = Math.floor((stockGain + divInc) * 0.20315);
+  const totalTax = finalIncomeTax + finalResidentTax;
+  const taxSaved = originalWithheld - totalTax;
+
+  // 手取り計算
+  const totalCashIn = sRev + bBefore + stRev + divInc;
+  const totalProfitIn = sRev + bBefore + stockGain + divInc;
+  const netCash = totalCashIn - socIns - othDed - totalTax;
+  const netProfit = totalProfitIn - socIns - othDed - totalTax;
+
+  return {
+    salaryIncome, bizIncome, stockGain, divInc,
+    itBasicDed, totalItDed, totalResDed,
+    finalIncomeTax, finalResidentTax, totalTax,
+    originalWithheld, taxSaved, netCash, netProfit
+  };
+}
+
+/**
+ * ==========================================
+ * 第3層：UI描画・イベント制御
+ * ==========================================
+ */
+function buildFormHTML(key) {
+  const p = appState[key];
+  return `
+    <div class="section-title">1. 給与・事業・控除（万円）</div>
+    ${numRow(key, "salaryRev", "給与収入", "額面の年収", p.salaryRev, 10)}
+    ${numRow(key, "bizIncomeBeforeBlue", "事業所得 (控除前)", "売上−経費の金額", p.bizIncomeBeforeBlue, 10)}
+    ${numRow(key, "blueDeduction", "青色申告特別控除", "R8:65万 / R9:75万", p.blueDeduction, 5)}
+    ${numRow(key, "socialIns", "社会保険料控除", "厚生年金・健保など", p.socialIns, 2)}
+    ${numRow(key, "otherDeduction", "その他所得控除", "iDeCo・生命保険など", p.otherDeduction, 5)}
+
+    <div class="section-title">2. 株式の譲渡（売却・万円）</div>
+    ${numRow(key, "stockRev", "株式の売却収入", "売却代金（元本含む）", p.stockRev, 50)}
+    ${numRow(key, "stockCost", "うち取得費（元本）", "購入時の元本・手数料", p.stockCost, 50)}
+    <div style="margin-bottom:10px;">
+      <span class="input-sub">株式譲渡の課税方式（総合課税は選択不可）</span>
+      <div class="radio-group">
+        <input type="radio" id="${key}_st_sep" name="${key}_stockMethod" value="separate" ${p.stockMethod==="separate"?"checked":""} onchange="updateRadio('${key}','stockMethod','separate')">
+        <label class="radio-label" for="${key}_st_sep">申告分離課税</label>
+        <input type="radio" id="${key}_st_no" name="${key}_stockMethod" value="no_declare" ${p.stockMethod==="no_declare"?"checked":""} onchange="updateRadio('${key}','stockMethod','no_declare')">
+        <label class="radio-label" for="${key}_st_no">申告不要(源泉のみ)</label>
+      </div>
+    </div>
+
+    <div class="section-title">3. 上場株式の配当所得（万円）</div>
+    ${numRow(key, "divIncome", "配当所得（額面）", "源泉徴収前の配当金", p.divIncome, 50)}
+    <div style="margin-bottom:10px;">
+      <span class="input-sub">配当所得の課税方式</span>
+      <div class="radio-group">
+        <input type="radio" id="${key}_div_comp" name="${key}_divMethod" value="comprehensive" ${p.divMethod==="comprehensive"?"checked":""} onchange="updateRadio('${key}','divMethod','comprehensive')">
+        <label class="radio-label" for="${key}_div_comp">総合課税(配当控除)</label>
+        <input type="radio" id="${key}_div_sep" name="${key}_divMethod" value="separate" ${p.divMethod==="separate"?"checked":""} onchange="updateRadio('${key}','divMethod','separate')">
+        <label class="radio-label" for="${key}_div_sep">申告分離課税</label>
+        <input type="radio" id="${key}_div_no" name="${key}_divMethod" value="no_declare" ${p.divMethod==="no_declare"?"checked":""} onchange="updateRadio('${key}','divMethod','no_declare')">
+        <label class="radio-label" for="${key}_div_no">申告不要</label>
+      </div>
+    </div>
+
+    <div class="result-box" id="res_${key}"></div>
+  `;
+}
+
+function numRow(key, field, label, sub, val, step) {
+  return `
+    <div class="input-row">
+      <div class="input-label">${label}<span class="input-sub">${sub}</span></div>
+      <div class="input-ctrl">
+        <button type="button" class="step-btn" onclick="stepVal('${key}','${field}',-${step})">−</button>
+        <input type="number" id="${key}_${field}" value="${val}" onchange="updateVal('${key}','${field}',this.value)">
+        <button type="button" class="step-btn" onclick="stepVal('${key}','${field}',${step})">＋</button>
+        <span class="unit">万円</span>
+      </div>
+    </div>
+  `;
+}
+
+function fmtYen(n) {
+  return n.toLocaleString("ja-JP") + "円";
+}
+
+function renderResults(key, r) {
+  const box = document.getElementById("res_" + key);
+  const savedLabel = r.taxSaved >= 0
+    ? `<span style="color:#059669;font-weight:700;">▲${fmtYen(r.taxSaved)} 節税</span>`
+    : `<span style="color:#dc2626;font-weight:700;">+${fmtYen(Math.abs(r.taxSaved))} 増税</span>`;
+
+  box.innerHTML = `
+    <div class="res-row"><span>株式譲渡益 / 配当所得</span><span>${fmtYen(r.stockGain)} / ${fmtYen(r.divInc)}</span></div>
+    <div class="res-row"><span>判定された所得税の基礎控除</span><span>${fmtYen(r.itBasicDed)}</span></div>
+    <div class="res-row"><span>所得税（復興特別所得税含）</span><span>${fmtYen(r.finalIncomeTax)}</span></div>
+    <div class="res-row"><span>住民税（均等割5,000円含）</span><span>${fmtYen(r.finalResidentTax)}</span></div>
+    <div class="res-row tax-total"><span>年間税額 合計</span><span>${fmtYen(r.totalTax)}</span></div>
+    <div class="res-row"><span>源泉徴収額(${fmtYen(r.originalWithheld)})との差</span><span>${savedLabel}</span></div>
+    <div class="res-row highlight"><span>手取り（純利益ベース）</span><span>${fmtYen(r.netProfit)}</span></div>
+    <div class="res-row highlight"><span>手取り（総入金キャッシュ）</span><span>${fmtYen(r.netCash)}</span></div>
+  `;
+  document.getElementById("badge" + key).textContent = `税額 ${Math.round(r.totalTax/10000*10)/10}万円`;
+}
+
+function calculateAll() {
+  const yearKey = document.getElementById("taxYear").value;
+  const resA = evaluatePattern(appState.A, yearKey);
+  const resB = evaluatePattern(appState.B, yearKey);
+
+  renderResults("A", resA);
+  renderResults("B", resB);
+
+  // フッター更新
+  document.getElementById("footA").textContent = `${Math.round(resA.totalTax/10000*10)/10}万 / ${Math.round(resA.netCash/10000*10)/10}万円`;
+  document.getElementById("footB").textContent = `${Math.round(resB.totalTax/10000*10)/10}万 / ${Math.round(resB.netCash/10000*10)/10}万円`;
+  
+  const diff = resA.netCash - resB.netCash;
+  const sign = diff > 0 ? "+" : "";
+  document.getElementById("footDiff").textContent = `${sign}${fmtYen(diff)}`;
+
+  localStorage.setItem("taxSimState_v1", JSON.stringify(appState));
+}
+
+function updateVal(key, field, val) {
+  appState[key][field] = Math.max(0, Number(val) || 0);
+  calculateAll();
+}
+
+function stepVal(key, field, delta) {
+  const next = Math.max(0, (Number(appState[key][field]) || 0) + delta);
+  appState[key][field] = next;
+  document.getElementById(`${key}_${field}`).value = next;
+  calculateAll();
+}
+
+function updateRadio(key, field, val) {
+  appState[key][field] = val;
+  calculateAll();
+}
+
+function copyAtoB() {
+  appState.B = JSON.parse(JSON.stringify(appState.A));
+  initForms();
+}
+
+function resetPreset() {
+  appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  initForms();
+}
+
+function switchTab(target) {
+  const pA = document.getElementById("panelA");
+  const pB = document.getElementById("panelB");
+  const tA = document.getElementById("tabA");
+  const tB = document.getElementById("tabB");
+  if (target === "A") {
+    pA.style.display = "block";
+    pB.style.display = "none";
+    tA.className = "tab-btn active-a";
+    tB.className = "tab-btn";
+  } else {
+    pA.style.display = "none";
+    pB.style.display = "block";
+    tA.className = "tab-btn";
+    tB.className = "tab-btn active-b";
+  }
+}
+
+function initForms() {
+  document.getElementById("formA").innerHTML = buildFormHTML("A");
+  document.getElementById("formB").innerHTML = buildFormHTML("B");
+  calculateAll();
+}
+
+window.addEventListener("DOMContentLoaded", initForms);
+</script>
+</body>
+</html>
